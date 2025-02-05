@@ -1,2 +1,2 @@
 # tryvlm
-multimodal language model
+creating a multimodal language model
