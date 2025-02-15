@@ -31,6 +31,50 @@ class SiglipVisionConfig:
         self.layer_norm_eps = layer_norm_eps
         self.num_image_tokens = num_image_tokens
 
+class SiglipVisionEmbeddings(nn.Module):
+    def __init__(self,config:SiglipVisionConfig):
+        super().__init__()
+        self.config = config
+        self.embed_dim = config.hidden_size
+        self.image_size = config.image_size
+        self.patch_size = config.patch_size
+
+        self.patch_embeddings = nn.Conv2d(
+            in_channels=config.num_channels,
+            out_channels=self.embed_dim,
+            kernal_size=self.patch_size,
+            stride=self.patch_size,
+            padding="valid", #no padding is added
+        )
+
+        self.num_patches = (self.image_size // self.patch_size) ** 2
+        self.num_positions = self.num_patches
+        self.position_embedding = nn.Embedding(self.num_positions, self.embed_dim)
+        self.register_buffer(
+            "position_ids",
+            torch.arange(self.num_positions).expand((1,-1)),
+            persistent=False,
+        )
+
+class SiglipVisionTransformer(nn.Module):
+    def __init__(self,config: SiglipVisionConfig):
+        super().__init__()
+        embed_dim = config.hidden_size
+
+        self.embeddings = SiglipVisionEmbeddings(config)
+        self.encoder = SiglipEncoder(config)
+        self.post_layernorm = nn.LayerNorm(embed_dim, eps=config.layer_norm_eps)
+
+    def forward(self,pixel_values: torch.Tensor) -> torch.Tensor:
+        # pixel_values = [Batch_size, Channels, Height, Width] -> [Batch_size, Num_Patches, Embed_Dimensions]
+        hidden_states = self.embeddings(pixel_values)
+
+        last_hidden_state = self.encoder(imput_embeds=hidden_states)
+
+        last_hidden_state = self.post_layernorm(last_hidden_state)
+
+        return last_hidden_state
+
 class SiglipVisionModel(nn.Module):
 
     def __init__(self, config: SiglipVisionConfig):
