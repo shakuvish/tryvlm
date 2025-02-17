@@ -56,6 +56,14 @@ class SiglipVisionEmbeddings(nn.Module):
             persistent=False,
         )
 
+    def forward(self, pixel_values: torch.FloatTensor) -> torch.Tensor:
+        _, _, height, width = pixel_values.shape
+        patch_embeds = self.patch_embedding(pixel_values)
+        embeddings = patch_embeds.flatten(2)
+        embeddings = embeddings.transpose(1,2)
+        embeddings = embeddings + self.position_embeddings(self.position_ids)
+        return embeddings
+
 class SiglipVisionTransformer(nn.Module):
     def __init__(self,config: SiglipVisionConfig):
         super().__init__()
