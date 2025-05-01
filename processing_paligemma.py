@@ -1,10 +1,44 @@
 from typing import Dict, List, Optional, Union, Tuple, Iterable
 import numpy as np
-from PIL import Image
+from PIL import Image   #PIL= python Image Library
 import torch
 
 IMAGENET_STANDARD_MEAN=[0.5,0.5,0.5]
 IMAGENET_STANDARD_STD = [0.5,0.5,0.5]
+
+def add_image_tokens_to_prompt(prefix_prompt, bos_token, image_seq_len, image_token):
+    return f"{image_token*image_seq_len}{bos_token}{prefix_prompt}\n"
+
+def rescale(
+        image:np.ndarray,scale:float,dtype:np.dtype=np.float32
+) ->np.ndarray:
+    rescaled_image= image*scale
+    rescaled_image=rescaled_image.astype(dtype)
+    return rescaled_image
+
+def resize(
+        image:Image,
+        size: Tuple[int,int],
+        resample: Image.Resampling = None,
+        reducing_gap: Optional[int] = None,
+) -> np.ndarray:
+    height,width=size
+    resized_image = image.resize(
+        (width,height), resample=resample,reducing_gap=reducing_gap
+    )
+    return resized_image
+
+def normalize(
+        image: np.ndarray,
+        mean: Union[float,Iterable[float]],
+        std: Union[float,Iterable[float]],
+) -> np.ndarray:
+    mean=np.array(mean,dtype=image.dtype)
+    std=np.array(std,dtype=image.dtype)
+    image= (image-mean) / std
+    return image
+
+
 
 def process_images(
         images:List[Image.Image],
@@ -22,7 +56,7 @@ def process_images(
     images = [np.array(image) for image in images]
     images = [rescale(image,scale=rescale_factor) for image in images]
     images = [normalize(image,mean=image_mean,std=image_std) for image in images]
-    images = [normalize.transpose(2,0,1) for image in images]
+    images = [image.transpose(2,0,1) for image in images] #channel,height,width
     return images
 
 class PaliGemmaProcessor:
