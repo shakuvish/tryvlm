@@ -31,7 +31,8 @@ class PaliGemmaForConditionalGeneration(nn.module):
         assert torch.all(attention_mask==1), "The input cannot be padded"
 
         inputs_embeds = self.language_model.get_input_embeddings()(input_ids)
-        selected_image_features= self.vision_towers(pixel_values.to(inputs_embeds.dtype))
+        selected_image_features= self.vision_tower(pixel_values.to(inputs_embeds.dtype))
         image_features= self.multi_modal_projector(selected_image_features)
         input_embeds, attention_mask,position_ids= self._merge_input_ids_with_image_features(image_features,input_embeds,input_ids,attention_mask,kv_cache)
 
+#2:52:48
